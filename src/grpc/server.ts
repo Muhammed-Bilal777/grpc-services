@@ -1,19 +1,32 @@
-import { Server, ServerCredentials } from "@grpc/grpc-js";
+// src/grpc/server.ts
+import * as grpc from "@grpc/grpc-js";
+import { loadProto } from "./loader";
 
-const startGRPCServer = () => {
-  const server = new Server();
+export function startGrpcServer(
+  handlers: Record<string, any>,
+  port: string = "50051"
+) {
+  const grpcPackage = loadProto();
+  const server = new grpc.Server();
 
-  // No services added yet
-  const address = "0.0.0.0:50051";
-
-  server.bindAsync(address, ServerCredentials.createInsecure(), (err, port) => {
-    if (err) {
-      console.error("❌ Failed to start gRPC server:", err);
-      return;
+  // Register only the handlers you passed in
+  for (const [pkgKey, servicePackage] of Object.entries(grpcPackage)) {
+    for (const [serviceName, serviceDef] of Object.entries(
+      servicePackage as any
+    )) {
+      if ((serviceDef as any).service && handlers[serviceName]) {
+        server.addService((serviceDef as any).service, handlers[serviceName]);
+        console.log(`✅ Registered gRPC service: ${pkgKey}.${serviceName}`);
+      }
     }
+  }
 
-    console.log(`🚀 gRPC Server running at ${address}`);
-  });
-};
-
-export default startGRPCServer;
+  server.bindAsync(
+    `0.0.0.0:${port}`,
+    grpc.ServerCredentials.createInsecure(),
+    () => {
+      console.log(`🚀 gRPC server running on port ${port}`);
+      server.start();
+    }
+  );
+}
