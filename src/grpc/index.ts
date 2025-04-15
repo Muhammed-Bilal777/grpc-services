@@ -1,4 +1,4 @@
-import { instrumentationInitializetion } from "../tracing";
+import { instrumentationInitializetion } from "./tracing";
 
 instrumentationInitializetion();
 
