@@ -4,7 +4,7 @@ import { Greeter } from "./handler/handler";
 
 const app = express();
 const PORT = 3000;
-
+//this is grpc service example
 // Start gRPC server with handlers
 startGrpcServer({ Greeter });
 
