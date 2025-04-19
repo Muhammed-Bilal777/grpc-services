@@ -1,13 +1,14 @@
-// src/handler/greeterHandler.ts
-export const Greeter = {
-  SayHello: (call: any, callback: any) => {
-    const { name } = call.request;
-    console.log("👋 SayHello called with:", name);
-    callback(null, { message: `Hello, ${name}!` });
-  },
-  SayHi: (call: any, callback: any) => {
-    const { name } = call.request;
-    console.log("🙋‍♂️ SayHi called with:", name);
-    callback(null, { message: `Hi there, ${name}!` });
-  },
-};
+import { sendUnaryData, ServerUnaryCall } from "@grpc/grpc-js";
+import { HelloReply, HelloRequest } from "../../generated/hello";
+
+export function sayHelloHandler(
+  call: ServerUnaryCall<HelloRequest, HelloReply>,
+  callback: sendUnaryData<HelloReply>
+) {
+  const name = call.request.name;
+  const reply: HelloReply = {
+    message: `Hello, ${name}!`,
+  };
+
+  callback(null, reply);
+}

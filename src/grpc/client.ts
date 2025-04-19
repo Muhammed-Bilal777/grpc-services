@@ -1,20 +1,38 @@
-// src/grpc/client.ts
-import * as grpc from "@grpc/grpc-js";
-import { loadProto } from "./loader";
+import { Server, ServerCredentials } from "@grpc/grpc-js";
+import { GreeterServiceName } from "../../generated/hello";
+import { sayHelloHandler } from "../handler/handler";
 
-const grpcPackage = loadProto();
-export const grpcClients: Record<string, any> = {};
+export function startGrpcServer() {
+  const server = new Server();
 
-for (const [pkgKey, servicePackage] of Object.entries(grpcPackage)) {
-  for (const [serviceName, ServiceConstructor] of Object.entries(
-    servicePackage as any
-  )) {
-    if (typeof ServiceConstructor === "function") {
-      grpcClients[serviceName] = new (ServiceConstructor as any)(
-        "localhost:50051",
-        grpc.credentials.createInsecure()
-      );
-      console.log(`🔌 Created gRPC client: ${pkgKey}.${serviceName}`);
+  // Add service manually since ts-proto did not export `GreeterService`
+  server.addService(
+    {
+      service: {
+        SayHello: {
+          path: `/${GreeterServiceName}/SayHello`,
+          requestStream: false,
+          responseStream: false,
+          requestSerialize: (arg: any) => Buffer.from(JSON.stringify(arg)),
+          requestDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
+          responseSerialize: (arg: any) => Buffer.from(JSON.stringify(arg)),
+          responseDeserialize: (buffer: Buffer) =>
+            JSON.parse(buffer.toString()),
+        },
+      },
+    } as any,
+    {
+      SayHello: sayHelloHandler,
     }
-  }
+  );
+
+  const address = "0.0.0.0:50051";
+  server.bindAsync(address, ServerCredentials.createInsecure(), (err, port) => {
+    if (err) {
+      console.error("gRPC Server error:", err);
+      return;
+    }
+    server.start();
+    console.log(`🚀 gRPC Server is running at ${address}`);
+  });
 }
